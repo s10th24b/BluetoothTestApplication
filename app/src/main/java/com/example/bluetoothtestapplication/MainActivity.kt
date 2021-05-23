@@ -30,7 +30,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mListPairedDevices: MutableList<String>
     private lateinit var mBluetoothDevice: BluetoothDevice
     private lateinit var mBluetoothSocket: BluetoothSocket
-    private lateinit var mBluetoothHandler: Handler
     private lateinit var mThreadConnectedBluetooth: ConnectedBluetoothThread
 
     companion object {
@@ -39,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         const val BT_CONNECTING_STATUS = 3
 
         //        val BT_UUID: UUID = UUID.fromString("1234")
-        val BT_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")
+        val BT_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -176,7 +175,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun run() {
-            val buffer = ByteArray(1024)
+            val buffer = ByteArray(8)
             var bytes: Int
             while (true) {
                 try {
@@ -185,7 +184,8 @@ class MainActivity : AppCompatActivity() {
                         SystemClock.sleep(100)
                         bytes = mmInStream.available()
                         bytes = mmInStream.read(buffer, 0, bytes)
-                        Log.d("KHJ","$bytes")
+//                        Log.d("KHJ", bytes.toString(16))
+                        Log.d("KHJ", "${buffer.map{it.toUByte()}}")
                     }
                 } catch (e: IOException) {
                     break
