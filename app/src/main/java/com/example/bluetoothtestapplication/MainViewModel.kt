@@ -116,6 +116,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         try {
+//            mBluetoothSocket = mBluetoothDevice.createInsecureRfcommSocketToServiceRecord(BT_UUID)
 //            mBluetoothSocket = mBluetoothDevice.createRfcommSocketToServiceRecord(BT_UUID)
             mBluetoothSocket = createBluetoothSocket(mBluetoothDevice)
             toast("connecting..")
@@ -129,6 +130,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         } catch (e: IOException) {
 //            toast("블루투스 연결 중 오류가 발생했습니다.")
             Log.d("KHJ", "블루투스 연결 중 오류가 발생했습니다.")
+            mBluetoothSocket.inputStream.close()
+            mBluetoothSocket.outputStream.close()
+            mBluetoothSocket.close()
             connected.value = false
             Log.d("KHJ", "$e")
         }
@@ -136,10 +140,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun createBluetoothSocket(device: BluetoothDevice): BluetoothSocket {
         val method = device.javaClass.getMethod(
-            "createInsecureRfcommSocketToServiceRecord",
-            (UUID::class.java)
+            "createRfcommSocket", Int::class.javaPrimitiveType
         )
-        return method.invoke(device, BT_UUID) as BluetoothSocket
+        return method.invoke(device, 1) as BluetoothSocket
     }
 
     private class ConnectedBluetoothThread(
@@ -174,6 +177,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         Log.d("KHJ", "${buffer.map { it.toUByte() }}")
                     }
                 } catch (e: IOException) {
+                    mmInStream.close()
+                    mmOutStream.close()
+                    mmSocket.close()
                     break
                 }
             }
@@ -211,9 +217,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (::mThreadConnectedBluetooth.isInitialized) {
             mThreadConnectedBluetooth.cancel()
         }
-        mBluetoothSocket.inputStream.close()
-        mBluetoothSocket.outputStream.close()
-        mBluetoothSocket.close()
+        if (::mBluetoothSocket.isInitialized) {
+            mBluetoothSocket.inputStream.close()
+            mBluetoothSocket.outputStream.close()
+            mBluetoothSocket.close()
+        }
         connected.value = false
     }
 }

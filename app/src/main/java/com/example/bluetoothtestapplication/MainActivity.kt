@@ -58,6 +58,19 @@ class MainActivity : AppCompatActivity() {
                 write("A")
             }
         }
+        viewModel.state.observe(this) {
+            val availableState = when (it) {
+                "활성화" -> true
+                else -> false
+            }
+            binding.apply {
+                startButton.isEnabled = !availableState
+                endButton.isEnabled = availableState
+                connectButton.isEnabled = availableState
+                disconnectButton.isEnabled = availableState
+                sendDataButton.isEnabled = availableState
+            }
+        }
         viewModel.connected.observe(this) {
             binding.connectButton.isEnabled = !it
         }
