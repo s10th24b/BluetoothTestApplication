@@ -58,6 +58,9 @@ class MainActivity : AppCompatActivity() {
                 write("A")
             }
         }
+        viewModel.connected.observe(this) {
+            binding.connectButton.isEnabled = !it
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

@@ -24,6 +24,7 @@ import java.util.*
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     val data = MutableLiveData<String>("null")
     val state = MutableLiveData<String>("비활성화")
+    val connected = MutableLiveData<Boolean>(false)
     val pub: PublishSubject<ByteArray> by lazy { PublishSubject.create<ByteArray>() }
 
     val mBluetoothAdapter by lazy { BluetoothAdapter.getDefaultAdapter() }
@@ -43,8 +44,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         if (mBluetoothAdapter.isEnabled) state.value = "활성화"
         val disposable = pub.subscribe({
-            data.postValue(it.map{byte -> byte.toUByte()}.toString())
-            Log.d("KHJ",it.map{byte -> byte.toUByte()}.toString())
+            data.postValue(it.map { byte -> byte.toUByte() }.toString())
+            Log.d("KHJ", it.map { byte -> byte.toUByte() }.toString())
         }) { throwable -> Log.d("KHJ", "throwable: $throwable") }
     }
 
@@ -74,6 +75,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (::mThreadConnectedBluetooth.isInitialized) {
                 mThreadConnectedBluetooth.cancel()
             }
+            bluetoothDisconnect()
             mBluetoothAdapter.disable()
 //            toast("블루투스가 비활성화 되었습니다.")
             state.value = "비활성화"
@@ -114,19 +116,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         try {
-            mBluetoothSocket = mBluetoothDevice.createRfcommSocketToServiceRecord(BT_UUID)
+//            mBluetoothSocket = mBluetoothDevice.createRfcommSocketToServiceRecord(BT_UUID)
+            mBluetoothSocket = createBluetoothSocket(mBluetoothDevice)
             toast("connecting..")
             mBluetoothSocket.connect()
             toast("after connecting..")
             mThreadConnectedBluetooth = ConnectedBluetoothThread(mBluetoothSocket, pub)
             mThreadConnectedBluetooth.start()
+            connected.value = true
             toast("starting..")
 //            mBluetoothHandler.obtainMessage(BT_CONNECTING_STATUS, 1, -1).sendToTarget()
         } catch (e: IOException) {
 //            toast("블루투스 연결 중 오류가 발생했습니다.")
             Log.d("KHJ", "블루투스 연결 중 오류가 발생했습니다.")
+            connected.value = false
             Log.d("KHJ", "$e")
         }
+    }
+
+    private fun createBluetoothSocket(device: BluetoothDevice): BluetoothSocket {
+        val method = device.javaClass.getMethod(
+            "createInsecureRfcommSocketToServiceRecord",
+            (UUID::class.java)
+        )
+        return method.invoke(device, BT_UUID) as BluetoothSocket
     }
 
     private class ConnectedBluetoothThread(
@@ -195,6 +208,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun bluetoothDisconnect() {
+        if (::mThreadConnectedBluetooth.isInitialized) {
+            mThreadConnectedBluetooth.cancel()
+        }
+        mBluetoothSocket.inputStream.close()
+        mBluetoothSocket.outputStream.close()
         mBluetoothSocket.close()
+        connected.value = false
     }
 }
