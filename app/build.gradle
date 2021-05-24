@@ -51,4 +51,10 @@ dependencies {
     def splitties_version = "3.0.0-beta01"
     implementation("com.louiscad.splitties:splitties-fun-pack-android-base:$splitties_version")
     implementation("com.louiscad.splitties:splitties-fun-pack-android-material-components:$splitties_version")
+
+    // rxandroidble2 for bluetooth ble
+    implementation "com.polidea.rxandroidble2:rxandroidble:1.12.1"
+
+    // rxbluetooth for bluetooth classic
+    implementation 'com.github.ivbaranov:rxbluetooth2:2.1.1'
 }

@@ -19,7 +19,6 @@
         android:layout_height="wrap_content"
         android:text="@{viewModel.data}"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/guideline2" />
 
     <androidx.constraintlayout.widget.Guideline
@@ -59,7 +58,7 @@
         android:id="@+id/stateTextView"
         android:layout_width="63dp"
         android:layout_height="16dp"
-        android:text="State"
+        android:text="@{viewModel.state}"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/guideline2" />
 
@@ -68,6 +67,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="send bluetooth data"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/disconnectButton" />
+
+    <Button
+        android:id="@+id/disconnectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="bluetooth disconnect"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/connectButton" />
 </androidx.constraintlayout.widget.ConstraintLayout>
