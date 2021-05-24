@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.AndroidViewModel
 import com.example.bluetoothtestapplication.databinding.ActivityMainBinding
 import splitties.toast.toast
 import java.io.IOException
@@ -59,9 +60,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        when (requestCode) {
+            REQUEST_ENABLE_BT -> {
+                when (resultCode) {
+                    AppCompatActivity.RESULT_OK -> {
+                        toast("RESULT_OK")
+                        viewModel.bluetoothOn()
+//                        binding.stateTextView.text = "활성화"
+                    }
+                    AppCompatActivity.RESULT_CANCELED -> {
+                        toast("RESULT_CANCELED")
+//                        binding.stateTextView.text = "비활성화"
+                    }
+                    else -> {
+                        toast("RESULT_UNKNOWN")
+                    }
+                }
+            }
+            else -> {
+                toast("Unknown requestCode")
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
     fun bluetoothOn() {
-//        val intentBluetoothEnable = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-//        startActivityForResult(intentBluetoothEnable, MainViewModel.REQUEST_ENABLE_BT)
+        val intentBluetoothEnable = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+        startActivityForResult(intentBluetoothEnable, MainViewModel.REQUEST_ENABLE_BT)
         viewModel.bluetoothOn()
     }
 

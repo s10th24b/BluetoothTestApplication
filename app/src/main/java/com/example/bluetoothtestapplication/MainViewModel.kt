@@ -1,5 +1,6 @@
 package com.example.bluetoothtestapplication
 
+import android.app.Application
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
@@ -9,17 +10,21 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import io.reactivex.Observable
+import io.reactivex.subjects.PublishSubject
 import splitties.toast.toast
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
 
-class MainViewModel : ViewModel() {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
     val data = MutableLiveData<String>("null")
     val state = MutableLiveData<String>("비활성화")
+    val pub: PublishSubject<ByteArray> by lazy { PublishSubject.create<ByteArray>() }
 
     val mBluetoothAdapter by lazy { BluetoothAdapter.getDefaultAdapter() }
     lateinit var mPairedDevices: Set<BluetoothDevice>
@@ -33,6 +38,14 @@ class MainViewModel : ViewModel() {
         const val BT_MESSAGE_READ = 2
         const val BT_CONNECTING_STATUS = 3
         val BT_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    }
+
+    init {
+        if (mBluetoothAdapter.isEnabled) state.value = "활성화"
+        val disposable = pub.subscribe({
+            data.postValue(it.map{byte -> byte.toUByte()}.toString())
+            Log.d("KHJ",it.map{byte -> byte.toUByte()}.toString())
+        }) { throwable -> Log.d("KHJ", "throwable: $throwable") }
     }
 
     fun bluetoothOn() {
@@ -58,6 +71,9 @@ class MainViewModel : ViewModel() {
 
     fun bluetoothOff() {
         if (mBluetoothAdapter.isEnabled) {
+            if (::mThreadConnectedBluetooth.isInitialized) {
+                mThreadConnectedBluetooth.cancel()
+            }
             mBluetoothAdapter.disable()
 //            toast("블루투스가 비활성화 되었습니다.")
             state.value = "비활성화"
@@ -99,9 +115,12 @@ class MainViewModel : ViewModel() {
         }
         try {
             mBluetoothSocket = mBluetoothDevice.createRfcommSocketToServiceRecord(BT_UUID)
+            toast("connecting..")
             mBluetoothSocket.connect()
-            mThreadConnectedBluetooth = ConnectedBluetoothThread(mBluetoothSocket)
+            toast("after connecting..")
+            mThreadConnectedBluetooth = ConnectedBluetoothThread(mBluetoothSocket, pub)
             mThreadConnectedBluetooth.start()
+            toast("starting..")
 //            mBluetoothHandler.obtainMessage(BT_CONNECTING_STATUS, 1, -1).sendToTarget()
         } catch (e: IOException) {
 //            toast("블루투스 연결 중 오류가 발생했습니다.")
@@ -110,7 +129,10 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    private class ConnectedBluetoothThread(private val mmSocket: BluetoothSocket) : Thread() {
+    private class ConnectedBluetoothThread(
+        private val mmSocket: BluetoothSocket,
+        private val subject: PublishSubject<ByteArray>
+    ) : Thread() {
         private lateinit var mmInStream: InputStream
         private lateinit var mmOutStream: OutputStream
 
@@ -134,6 +156,7 @@ class MainViewModel : ViewModel() {
                         SystemClock.sleep(100)
                         bytes = mmInStream.available()
                         bytes = mmInStream.read(buffer, 0, bytes)
+                        subject.onNext(buffer)
 //                        Log.d("KHJ", bytes.toString(16))
                         Log.d("KHJ", "${buffer.map { it.toUByte() }}")
                     }
@@ -155,13 +178,18 @@ class MainViewModel : ViewModel() {
 
         fun cancel() {
             try {
+                mmInStream.close()
+                mmOutStream.close()
                 mmSocket.close()
+                subject.doOnComplete { Log.d("KHJ", "subject doOnComplete") }
+                subject.onComplete()
             } catch (e: IOException) {
 //                toast("소켓 해제 중 오류가 발생했습니다.")
                 Log.d("KHJ", "소켓 해제 중 오류가 발생했습니다.")
             }
         }
     }
+
     fun write(str: String) {
         mThreadConnectedBluetooth.write(str)
     }
