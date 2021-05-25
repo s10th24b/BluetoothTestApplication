@@ -18,6 +18,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
+import splitties.systemservices.displayManager
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -37,7 +38,7 @@ class RxBluetoothAdapterViewModel(application: Application) : AndroidViewModel(a
     init {
         val connectionDisposable = adapter.connectionEventStream
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribeOn(Schedulers.computation())
+            .subscribeOn(Schedulers.io())
             .subscribe({ (state, device) ->
                 when (state) {
                     ConnectionState.CONNECTED -> {
@@ -51,11 +52,21 @@ class RxBluetoothAdapterViewModel(application: Application) : AndroidViewModel(a
                     ConnectionState.DISCONNECTED -> {
                         Log.d("KHJ", "${device.address} - disconnected")
                         connectionState.value = -1
+                        disconnect()
                     }
                 }
             }) { error ->
                 Log.e("KHJ", "error in connectionState $error")
             }
+
+        val scanningDisposable = adapter.scanStateStream
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeOn(Schedulers.io())
+            .subscribe({ isScanning ->
+                Log.d("KHJ", "isScanning: $isScanning")
+            }, { error -> Log.d("KHJ", "error in scanStateStream: $error") }, {
+                Log.d("KHJ", "scanStateStream onComplete()")
+            })
     }
 
 
@@ -169,7 +180,7 @@ class RxBluetoothAdapterViewModel(application: Application) : AndroidViewModel(a
         val inputStream by lazy { socket.inputStream }
         val outputStream by lazy { socket.outputStream }
         override fun run() {
-            val buffer = ByteArray(16)
+            val buffer = ByteArray(24) // 최소한 8 이상. 딱 8은 ArrayIndexBound 예외발생위험.
             var bytes: Int
             while (true) {
                 try {
@@ -178,22 +189,30 @@ class RxBluetoothAdapterViewModel(application: Application) : AndroidViewModel(a
 //                        SystemClock.sleep(500) // 500으로 하면 데이터가 8이 아니라 16개가 들어옴.
                         SystemClock.sleep(400)
                         bytes = inputStream.available()
-//                        Log.d("KHJ","bytes: $bytes")
+//                        Log.d("KHJ","available bytes: $bytes")
                         bytes = inputStream.read(buffer, 0, bytes)
+//                        Log.d("KHJ","read bytes: $bytes")
 //                        val sdf = SimpleDateFormat("hh:mm:ss:SS")
 //                        Log.d("KHJ", "time: ${sdf.format(System.currentTimeMillis())}")
                         subject.onNext(buffer)
-//                        Log.d("KHJ", bytes.toString(16))
-//                        Log.d("KHJ", "${buffer.map { it.toUByte() }}")
                     }
                 } catch (e: IOException) {
-                    inputStream.close()
-                    outputStream.close()
-                    socket.close()
+                    disconnectSocket()
+                    subject.onError(e)
+                    break
+                } catch (e: ArrayIndexOutOfBoundsException) {
+                    Log.e("KHJ", "ArrayIndexOutOfBoundsException Occurred!")
+                    disconnectSocket()
                     subject.onError(e)
                     break
                 }
             }
+        }
+
+        fun disconnectSocket() {
+            inputStream.close()
+            outputStream.close()
+            socket.close()
         }
     }
 
