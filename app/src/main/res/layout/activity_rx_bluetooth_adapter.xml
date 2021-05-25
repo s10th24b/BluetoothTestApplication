@@ -71,5 +71,21 @@
         android:text="@{viewModel.data}"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/connStateTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@{Integer.toString(viewModel.connectionState)}"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/blueDataTextView" />
+
+    <TextView
+        android:id="@+id/bluePairableTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="pairable"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
