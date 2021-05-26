@@ -55,9 +55,9 @@ dependencies {
     // rxandroidble2 for bluetooth ble
     implementation "com.polidea.rxandroidble2:rxandroidble:1.12.1"
 
-    // rxbluetooth for bluetooth classic
+    // rxbluetooth for bluetooth classic  not working...
     implementation 'com.github.ivbaranov:rxbluetooth2:2.1.1'
 
-    // rx-bluetooth-adapter
+    // rx-bluetooth-adapter for bluetooth classic
     implementation 'com.github.zakaprov:rx-bluetooth-adapter:1.1.1'
 }
